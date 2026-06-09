@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
@@ -17,17 +17,18 @@ class KnowledgeActions {
   final ApiClient _api;
 
   Future<void> uploadFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'txt', 'md'],
+    const typeGroup = XTypeGroup(
+      label: 'documents',
+      extensions: ['pdf', 'txt', 'md'],
     );
-    if (result == null || result.files.isEmpty) {
+    final file = await openFile(
+      acceptedTypeGroups: const [typeGroup],
+    );
+    if (file == null) {
       throw Exception('未选择文件');
     }
-
-    final file = result.files.first;
     final formData = FormData.fromMap({
-      'file': await MultipartFile.fromFile(file.path!, filename: file.name),
+      'file': await MultipartFile.fromFile(file.path, filename: file.name),
     });
 
     await _api.dio.post('/documents/upload', data: formData);

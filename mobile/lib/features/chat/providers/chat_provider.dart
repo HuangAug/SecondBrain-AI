@@ -42,15 +42,36 @@ class ChatStreamNotifier extends StateNotifier<List<ChatMessage>> {
         options: Options(responseType: ResponseType.stream),
       );
 
-      final stream = resp.data.stream as ResponseBody;
+      final stream = resp.data as ResponseBody;
       final buffer = StringBuffer();
+      var pending = '';
 
       await for (final chunk in stream.stream) {
-        final text = utf8.decode(chunk);
-        for (final line in text.split('\n')) {
+        pending += utf8.decode(chunk);
+        final lines = pending.split('\n');
+        pending = lines.removeLast();
+        for (final line in lines) {
           if (!line.startsWith('data: ')) continue;
           final jsonStr = line.substring(6).trim();
           if (jsonStr.isEmpty) continue;
+          final data = json.decode(jsonStr) as Map<String, dynamic>;
+          if (data['content'] != null && (data['content'] as String).isNotEmpty) {
+            buffer.write(data['content']);
+            final updated = state.last.copyWith(content: buffer.toString(), isStreaming: true);
+            state = [...state.sublist(0, state.length - 1), updated];
+          }
+          if (data['done'] == true) {
+            _conversationId = data['conversation_id'] as String?;
+            final citations = data['citations'] as List<dynamic>?;
+            final finalMsg = state.last.copyWith(isStreaming: false, citations: citations);
+            state = [...state.sublist(0, state.length - 1), finalMsg];
+          }
+        }
+      }
+
+      if (pending.startsWith('data: ')) {
+        final jsonStr = pending.substring(6).trim();
+        if (jsonStr.isNotEmpty) {
           final data = json.decode(jsonStr) as Map<String, dynamic>;
           if (data['content'] != null && (data['content'] as String).isNotEmpty) {
             buffer.write(data['content']);
