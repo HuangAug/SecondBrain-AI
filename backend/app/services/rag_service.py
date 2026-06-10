@@ -30,7 +30,7 @@ async def save_upload(
 ) -> Document:
     file_type = detect_file_type(filename)
     if file_type == "unknown":
-        raise ValueError("仅支持 PDF、TXT、Markdown 文件")
+        raise ValueError("仅支持 PDF、TXT、Markdown、Word 文件")
 
     os.makedirs(settings.upload_dir, exist_ok=True)
     doc_id = uuid.uuid4()
