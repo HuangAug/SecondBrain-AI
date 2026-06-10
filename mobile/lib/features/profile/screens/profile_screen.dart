@@ -12,7 +12,13 @@ class ProfileScreen extends ConsumerWidget {
     final auth = ref.watch(authProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('我的')),
+      appBar: AppBar(
+        title: const Text('我的'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/home'),
+        ),
+      ),
       body: ListView(
         children: [
           ListTile(
@@ -57,7 +63,10 @@ class ProfileScreen extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         title: Text(title),
         content: Text(content),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('知道了'))],
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('知道了'))
+        ],
       ),
     );
   }

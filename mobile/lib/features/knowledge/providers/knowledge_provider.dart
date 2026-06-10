@@ -36,6 +36,16 @@ class KnowledgeActions {
     await _api.dio.post('/documents/upload', data: formData);
   }
 
+  Future<void> deleteDocument(String documentId) async {
+    await _api.dio.delete('/documents/$documentId');
+  }
+
+  Future<void> deleteDocuments(List<String> documentIds) async {
+    await _api.dio.post('/documents/bulk-delete', data: {
+      'ids': documentIds,
+    });
+  }
+
   Future<String> createRagConversation(String documentId,
       {String? title}) async {
     final resp = await _api.dio.post('/conversations', data: {

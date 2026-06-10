@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/navigation/navigation_helpers.dart';
 import '../providers/plan_provider.dart';
 
 class PlanDetailScreen extends ConsumerWidget {
@@ -14,7 +16,20 @@ class PlanDetailScreen extends ConsumerWidget {
     final progress = ref.watch(planProgressProvider(planId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('计划详情')),
+      appBar: AppBar(
+        title: const Text('计划详情'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => goBackOrHome(context, fallback: '/plans'),
+        ),
+        actions: [
+          IconButton(
+            tooltip: '删除计划',
+            onPressed: () => _confirmDelete(context, ref),
+            icon: const Icon(Icons.delete_outline),
+          ),
+        ],
+      ),
       body: plan.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('加载失败：$e')),
@@ -56,9 +71,11 @@ class PlanDetailScreen extends ConsumerWidget {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('今日任务', style: Theme.of(context).textTheme.titleMedium),
+                      Text('今日任务',
+                          style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 8),
-                      ...prog.todayTasks.map((t) => _TaskTile(planId: planId, task: t)),
+                      ...prog.todayTasks
+                          .map((t) => _TaskTile(planId: planId, task: t)),
                       const Divider(height: 32),
                     ],
                   );
@@ -72,6 +89,45 @@ class PlanDetailScreen extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除学习计划？'),
+        content: const Text('删除后该计划和所有任务都会被移除，无法恢复。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(planActionsProvider).deletePlan(planId);
+      ref.invalidate(plansProvider);
+      ref.invalidate(planDetailProvider(planId));
+      ref.invalidate(planProgressProvider(planId));
+      if (context.mounted) {
+        context.go('/plans');
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('学习计划已删除')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('删除失败：$e')));
+      }
+    }
   }
 }
 

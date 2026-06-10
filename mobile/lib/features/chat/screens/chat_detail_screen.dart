@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/navigation/navigation_helpers.dart';
 import '../models/conversation.dart';
 import '../providers/chat_provider.dart';
 
@@ -30,13 +31,17 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final messages = ref.watch(chatStreamProvider);
 
     if (!isNew && !_initialized) {
-      final detail = ref.watch(conversationDetailProvider(widget.conversationId));
+      final detail =
+          ref.watch(conversationDetailProvider(widget.conversationId));
       detail.whenData((conv) {
         if (!_initialized) {
           _initialized = true;
           ref.read(chatStreamProvider.notifier).setMessages(
                 conv.messages
-                    .map((m) => ChatMessage(role: m.role, content: m.content, citations: m.citations))
+                    .map((m) => ChatMessage(
+                        role: m.role,
+                        content: m.content,
+                        citations: m.citations))
                     .toList(),
               );
         }
@@ -44,7 +49,13 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(isNew ? '新对话' : '对话详情')),
+      appBar: AppBar(
+        title: Text(isNew ? '新对话' : '对话详情'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => goBackOrHome(context, fallback: '/chat'),
+        ),
+      ),
       body: Column(
         children: [
           Expanded(
@@ -55,15 +66,19 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                 final msg = messages[index];
                 final isUser = msg.role == 'user';
                 return Align(
-                  alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment:
+                      isUser ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(12),
-                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.8),
+                    constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.8),
                     decoration: BoxDecoration(
                       color: isUser
                           ? Theme.of(context).colorScheme.primaryContainer
-                          : Theme.of(context).colorScheme.surfaceContainerHighest,
+                          : Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
@@ -72,7 +87,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                         if (isUser)
                           Text(msg.content)
                         else
-                          MarkdownBody(data: msg.content.isEmpty && msg.isStreaming ? '...' : msg.content),
+                          MarkdownBody(
+                              data: msg.content.isEmpty && msg.isStreaming
+                                  ? '...'
+                                  : msg.content),
                         if (msg.isStreaming)
                           const Padding(
                             padding: EdgeInsets.only(top: 4),
@@ -125,7 +143,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     _controller.clear();
-    final convId = widget.conversationId == 'new' ? null : widget.conversationId;
-    ref.read(chatStreamProvider.notifier).sendMessage(text, conversationId: convId);
+    final convId =
+        widget.conversationId == 'new' ? null : widget.conversationId;
+    ref
+        .read(chatStreamProvider.notifier)
+        .sendMessage(text, conversationId: convId);
   }
 }

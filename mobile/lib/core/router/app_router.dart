@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -14,10 +15,13 @@ import '../../features/study_plan/screens/plan_list_screen.dart';
 import '../../features/study_plan/screens/plan_wizard_screen.dart';
 import '../shell/main_shell.dart';
 
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/home',
     redirect: (context, state) {
       final isLoggedIn = authState.isAuthenticated;
@@ -35,10 +39,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       ShellRoute(
         builder: (context, state, child) => MainShell(child: child),
         routes: [
-          GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
-          GoRoute(path: '/chat', builder: (context, state) => const ChatListScreen()),
-          GoRoute(path: '/knowledge', builder: (context, state) => const KnowledgeScreen()),
-          GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
+          GoRoute(
+              path: '/home', builder: (context, state) => const HomeScreen()),
+          GoRoute(
+              path: '/chat',
+              builder: (context, state) => const ChatListScreen()),
+          GoRoute(
+              path: '/knowledge',
+              builder: (context, state) => const KnowledgeScreen()),
+          GoRoute(
+              path: '/profile',
+              builder: (context, state) => const ProfileScreen()),
         ],
       ),
       GoRoute(
@@ -47,15 +58,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           conversationId: state.pathParameters['id']!,
         ),
       ),
-      GoRoute(path: '/plans', builder: (context, state) => const PlanListScreen()),
-      GoRoute(path: '/plans/new', builder: (context, state) => const PlanWizardScreen()),
+      GoRoute(
+          path: '/plans', builder: (context, state) => const PlanListScreen()),
+      GoRoute(
+          path: '/plans/new',
+          builder: (context, state) => const PlanWizardScreen()),
       GoRoute(
         path: '/plans/:id',
-        builder: (context, state) => PlanDetailScreen(planId: state.pathParameters['id']!),
+        builder: (context, state) =>
+            PlanDetailScreen(planId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/documents/:id',
-        builder: (context, state) => DocDetailScreen(documentId: state.pathParameters['id']!),
+        builder: (context, state) =>
+            DocDetailScreen(documentId: state.pathParameters['id']!),
       ),
     ],
   );
