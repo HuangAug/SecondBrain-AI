@@ -21,7 +21,8 @@ class HomeScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('你好，${auth.nickname ?? "学习者"}！', style: Theme.of(context).textTheme.headlineSmall),
+            Text('你好，${auth.nickname ?? "学习者"}！',
+                style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
             Text('今天也要加油学习哦', style: Theme.of(context).textTheme.bodyLarge),
             const SizedBox(height: 24),
@@ -49,7 +50,8 @@ class HomeScreen extends ConsumerWidget {
                   }
                   final activePlan = list.first;
                   return FutureBuilder(
-                    future: ref.read(planProgressProvider(activePlan.id).future),
+                    future:
+                        ref.read(planProgressProvider(activePlan.id).future),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
                         return const Center(child: CircularProgressIndicator());
@@ -64,12 +66,17 @@ class HomeScreen extends ConsumerWidget {
                         children: progress.todayTasks
                             .map((t) => Card(
                                   child: ListTile(
+                                    onTap: () =>
+                                        context.push('/plans/${activePlan.id}'),
                                     leading: Icon(
-                                      t.completed ? Icons.check_circle : Icons.radio_button_unchecked,
+                                      t.completed
+                                          ? Icons.check_circle
+                                          : Icons.radio_button_unchecked,
                                       color: t.completed ? Colors.green : null,
                                     ),
                                     title: Text(t.title),
                                     subtitle: Text(t.description),
+                                    trailing: const Icon(Icons.chevron_right),
                                   ),
                                 ))
                             .toList(),
