@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -72,9 +73,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const Spacer(),
               Icon(Icons.psychology, size: 72, color: Theme.of(context).colorScheme.primary),
               const SizedBox(height: 16),
-              Text('SecondBrain', style: Theme.of(context).textTheme.headlineMedium, textAlign: TextAlign.center),
+              Text(AppConstants.appName, style: Theme.of(context).textTheme.headlineMedium, textAlign: TextAlign.center),
               const SizedBox(height: 8),
-              Text('你的 AI 学习第二大脑', style: Theme.of(context).textTheme.bodyLarge, textAlign: TextAlign.center),
+              Text('你的 AI 学习助手', style: Theme.of(context).textTheme.bodyLarge, textAlign: TextAlign.center),
               const Spacer(),
               TextField(
                 controller: _phoneController,

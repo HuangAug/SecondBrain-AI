@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../study_plan/providers/plan_provider.dart';
 
@@ -14,7 +15,7 @@ class HomeScreen extends ConsumerWidget {
     final plans = ref.watch(plansProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('SecondBrain')),
+      appBar: AppBar(title: const Text(AppConstants.appName)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
