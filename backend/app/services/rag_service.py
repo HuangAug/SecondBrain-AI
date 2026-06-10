@@ -3,17 +3,23 @@ import uuid
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.config import settings
 from app.llm.prompts import RAG_SYSTEM_PROMPT
 from app.llm.provider import LLMProvider, get_embedding_provider
-from app.models.conversation import Conversation, Message
+from app.models.conversation import Message
 from app.models.document import DocChunk, Document
 from app.models.user import User
 from app.rag.chunker import chunk_text, detect_file_type, extract_text_from_file
-from app.rag.retriever import format_context, retrieve_chunks
-from app.services import chat_service
+from app.rag.retriever import (
+    format_context,
+    has_ready_documents,
+    retrieve_chunks,
+    retrieve_user_chunks,
+)
+
+
+EMPTY_KNOWLEDGE_BASE_RESPONSE = "当前知识库还没有可用文档。请先上传文档，并等待处理完成后再提问。"
 
 
 async def save_upload(
@@ -131,3 +137,33 @@ async def build_rag_messages(
                 messages.append({"role": msg.role, "content": msg.content})
     messages.append({"role": "user", "content": user_content})
     return messages, citations
+
+
+async def build_user_kb_rag_messages(
+    db: AsyncSession,
+    user: User,
+    user_message: str,
+    llm: LLMProvider,
+    history: list[Message] | None = None,
+) -> tuple[list[dict[str, str]], list[dict]]:
+    chunks = await retrieve_user_chunks(db, user.id, user_message, llm)
+    context, citations = format_context(chunks)
+
+    if not context:
+        system = RAG_SYSTEM_PROMPT + "\n\n注意：当前账号知识库未检索到相关文档片段。"
+        user_content = user_message
+    else:
+        system = RAG_SYSTEM_PROMPT
+        user_content = f"参考知识库片段：\n\n{context}\n\n用户问题：{user_message}"
+
+    messages: list[dict[str, str]] = [{"role": "system", "content": system}]
+    if history:
+        for msg in history:
+            if msg.role in ("user", "assistant"):
+                messages.append({"role": msg.role, "content": msg.content})
+    messages.append({"role": "user", "content": user_content})
+    return messages, citations
+
+
+async def user_has_ready_documents(db: AsyncSession, user: User) -> bool:
+    return await has_ready_documents(db, user.id)

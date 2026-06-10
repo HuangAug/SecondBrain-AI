@@ -93,19 +93,44 @@ async def chat_stream(
         title = req.message[:30] + ("..." if len(req.message) > 30 else "")
         conv = await chat_service.create_conversation(db, user, "chat", title)
 
-    llm = get_llm_provider()
-
-    if conv.type == "rag" and conv.document_id:
-        messages, citations = await rag_service.build_rag_messages(
-            db, conv.document_id, req.message, llm, history
-        )
-    else:
-        messages = chat_service.build_chat_messages(history, req.message)
-        citations = None
-
     await chat_service.save_message(db, conv.id, "user", req.message)
 
     conv_id = conv.id
+
+    if conv.type == "rag" and not conv.document_id:
+        has_documents = await rag_service.user_has_ready_documents(db, user)
+        if not has_documents:
+            empty_response = rag_service.EMPTY_KNOWLEDGE_BASE_RESPONSE
+
+            async def empty_kb_stream():
+                async with async_session() as stream_db:
+                    await chat_service.save_message(stream_db, conv_id, "assistant", empty_response, [])
+                    await stream_db.commit()
+
+                payload = {
+                    "content": empty_response,
+                    "done": True,
+                    "conversation_id": str(conv_id),
+                    "citations": [],
+                }
+                yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+            return StreamingResponse(empty_kb_stream(), media_type="text/event-stream")
+
+    llm = get_llm_provider()
+
+    if conv.type == "rag":
+        if conv.document_id:
+            messages, citations = await rag_service.build_rag_messages(
+                db, conv.document_id, req.message, llm, history
+            )
+        else:
+            messages, citations = await rag_service.build_user_kb_rag_messages(
+                db, user, req.message, llm, history
+            )
+    else:
+        messages = chat_service.build_chat_messages(history, req.message)
+        citations = None
 
     async def event_stream():
         full_response = ""
