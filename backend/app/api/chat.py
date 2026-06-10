@@ -11,6 +11,7 @@ from app.models.user import User
 from app.schemas.chat import (
     ChatRequest,
     ConversationCreate,
+    ConversationDeleteRequest,
     ConversationListItem,
     ConversationResponse,
     MessageResponse,
@@ -68,6 +69,27 @@ async def get_conversation(
     if not conv:
         raise HTTPException(status_code=404, detail="对话不存在")
     return conv
+
+
+@router.delete("/conversations/{conversation_id}", status_code=204)
+async def delete_conversation(
+    conversation_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    deleted = await chat_service.delete_conversation(db, user, conversation_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="对话不存在")
+
+
+@router.post("/conversations/bulk-delete")
+async def bulk_delete_conversations(
+    req: ConversationDeleteRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    deleted_count = await chat_service.delete_conversations(db, user, req.ids)
+    return {"deleted_count": deleted_count}
 
 
 @router.post("/chat/stream")

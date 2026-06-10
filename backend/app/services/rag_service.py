@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.llm.prompts import RAG_SYSTEM_PROMPT
 from app.llm.provider import LLMProvider, get_embedding_provider
-from app.models.conversation import Message
+from app.models.conversation import Conversation, Message
 from app.models.document import DocChunk, Document
 from app.models.user import User
 from app.rag.chunker import chunk_text, detect_file_type, extract_text_from_file
@@ -111,6 +111,43 @@ async def get_document(db: AsyncSession, user: User, document_id: uuid.UUID) -> 
         select(Document).where(Document.id == document_id, Document.user_id == user.id)
     )
     return result.scalar_one_or_none()
+
+
+async def delete_document(db: AsyncSession, user: User, document_id: uuid.UUID) -> bool:
+    doc = await get_document(db, user, document_id)
+    if not doc:
+        return False
+
+    result = await db.execute(
+        select(Conversation).where(
+            Conversation.user_id == user.id,
+            Conversation.document_id == document_id,
+        )
+    )
+    for conv in result.scalars().all():
+        conv.document_id = None
+
+    file_path = doc.file_path
+    await db.delete(doc)
+    await db.flush()
+
+    if file_path and os.path.exists(file_path):
+        os.remove(file_path)
+
+    return True
+
+
+async def delete_documents(
+    db: AsyncSession,
+    user: User,
+    document_ids: list[uuid.UUID],
+) -> int:
+    deleted_count = 0
+    for document_id in document_ids:
+        deleted = await delete_document(db, user, document_id)
+        if deleted:
+            deleted_count += 1
+    return deleted_count
 
 
 async def build_rag_messages(

@@ -52,6 +52,17 @@ async def get_plan(
     return plan
 
 
+@router.delete("/{plan_id}", status_code=204)
+async def delete_plan(
+    plan_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    deleted = await study_plan_service.delete_plan(db, user, plan_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="计划不存在")
+
+
 @router.get("/{plan_id}/progress", response_model=PlanProgressResponse)
 async def get_progress(
     plan_id: uuid.UUID,

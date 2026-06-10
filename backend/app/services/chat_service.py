@@ -29,6 +29,32 @@ async def get_conversation(db: AsyncSession, user: User, conversation_id: uuid.U
     return result.scalar_one_or_none()
 
 
+async def delete_conversation(db: AsyncSession, user: User, conversation_id: uuid.UUID) -> bool:
+    conv = await get_conversation(db, user, conversation_id)
+    if not conv:
+        return False
+    await db.delete(conv)
+    await db.flush()
+    return True
+
+
+async def delete_conversations(
+    db: AsyncSession,
+    user: User,
+    conversation_ids: list[uuid.UUID],
+) -> int:
+    result = await db.execute(
+        select(Conversation)
+        .options(selectinload(Conversation.messages))
+        .where(Conversation.id.in_(conversation_ids), Conversation.user_id == user.id)
+    )
+    conversations = list(result.scalars().all())
+    for conv in conversations:
+        await db.delete(conv)
+    await db.flush()
+    return len(conversations)
+
+
 async def create_conversation(
     db: AsyncSession,
     user: User,

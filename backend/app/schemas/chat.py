@@ -10,6 +10,10 @@ class ConversationCreate(BaseModel):
     document_id: uuid.UUID | None = None
 
 
+class ConversationDeleteRequest(BaseModel):
+    ids: list[uuid.UUID] = Field(..., min_length=1, max_length=100)
+
+
 class MessageResponse(BaseModel):
     id: uuid.UUID
     role: str

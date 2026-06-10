@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import async_session, get_db
 from app.models.user import User
-from app.schemas.document import DocumentResponse, DocumentUploadResponse
+from app.schemas.document import DocumentDeleteRequest, DocumentResponse, DocumentUploadResponse
 from app.services import rag_service
 from app.utils.auth import get_current_user
 
@@ -40,6 +40,27 @@ async def get_document(
     if not doc:
         raise HTTPException(status_code=404, detail="文档不存在")
     return doc
+
+
+@router.delete("/{document_id}", status_code=204)
+async def delete_document(
+    document_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    deleted = await rag_service.delete_document(db, user, document_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="文档不存在")
+
+
+@router.post("/bulk-delete")
+async def bulk_delete_documents(
+    req: DocumentDeleteRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    deleted_count = await rag_service.delete_documents(db, user, req.ids)
+    return {"deleted_count": deleted_count}
 
 
 @router.post("/upload", response_model=DocumentUploadResponse)

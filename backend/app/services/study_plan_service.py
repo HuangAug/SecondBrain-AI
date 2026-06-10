@@ -72,6 +72,15 @@ async def get_plan(db: AsyncSession, user: User, plan_id: uuid.UUID) -> StudyPla
     return result.scalar_one_or_none()
 
 
+async def delete_plan(db: AsyncSession, user: User, plan_id: uuid.UUID) -> bool:
+    plan = await get_plan(db, user, plan_id)
+    if not plan:
+        return False
+    await db.delete(plan)
+    await db.flush()
+    return True
+
+
 async def complete_task(
     db: AsyncSession,
     user: User,
